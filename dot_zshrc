@@ -1,0 +1,246 @@
+# If you come from bash you might have to change your $PATH.
+# export PATH=$HOME/bin:/usr/local/bin:$PATH
+
+# Path to your oh-my-zsh installation.
+export ZSH="/Users/enelsestuen/.oh-my-zsh"
+
+# Set name of the theme to load --- if set to "random", it will
+# load a random theme each time oh-my-zsh is loaded, in which case,
+# to know which specific one was loaded, run: echo $RANDOM_THEME
+# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
+ZSH_THEME="robbyrussell"
+
+# Set list of themes to pick from when loading at random
+# Setting this variable when ZSH_THEME=random will cause zsh to load
+# a theme from this variable instead of looking in $ZSH/themes/
+# If set to an empty array, this variable will have no effect.
+# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion.
+# Case-sensitive completion must be off. _ and - will be interchangeable.
+# HYPHEN_INSENSITIVE="true"
+
+# Uncomment the following line to disable bi-weekly auto-update checks.
+# DISABLE_AUTO_UPDATE="true"
+
+# Uncomment the following line to automatically update without prompting.
+# DISABLE_UPDATE_PROMPT="true"
+
+# Uncomment the following line to change how often to auto-update (in days).
+# export UPDATE_ZSH_DAYS=13
+
+# Uncomment the following line if pasting URLs and other text is messed up.
+# DISABLE_MAGIC_FUNCTIONS="true"
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+# ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# Caution: this setting can cause issues with multiline prompts (zsh 5.7.1 and newer seem to work)
+# See https://github.com/ohmyzsh/ohmyzsh/issues/5765
+# COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+# You can set one of the optional three formats:
+# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
+# or set a custom format using the strftime function format specifications,
+# see 'man strftime' for details.
+# HIST_STAMPS="mm/dd/yyyy"
+
+# Would you like to use another custom folder than $ZSH/custom?
+# ZSH_CUSTOM=/path/to/new-custom-folder
+
+# Which plugins would you like to load?
+# Standard plugins can be found in $ZSH/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(git)
+
+source $ZSH/oh-my-zsh.sh
+
+# User configuration
+
+# export MANPATH="/usr/local/man:$MANPATH"
+
+# You may need to manually set your language environment
+# export LANG=en_US.UTF-8
+
+# Preferred editor for local and remote sessions
+# if [[ -n $SSH_CONNECTION ]]; then
+#   export EDITOR='vim'
+# else
+#   export EDITOR='mvim'
+# fi
+
+# Set personal aliases, overriding those provided by oh-my-zsh libs,
+# plugins, and themes. Aliases can be placed here, though oh-my-zsh
+# users are encouraged to define aliases within the ZSH_CUSTOM folder.
+# For a full list of active aliases, run `alias`.
+#
+# Example aliases
+# alias zshconfig="mate ~/.zshrc"
+# alias ohmyzsh="mate ~/.oh-my-zsh"
+#
+export PATH="/usr/local/bin:/usr/local/sbin:$PATH"
+export PATH="/usr/local/opt/python/libexec/bin:$PATH"
+
+### Added by Zinit's installer
+if [[ ! -f $HOME/.zinit/bin/zinit.zsh ]]; then
+    print -P "%F{33}▓▒░ %F{220}Installing %F{33}DHARMA%F{220} Initiative Plugin Manager (%F{33}zdharma/zinit%F{220})…%f"
+    command mkdir -p "$HOME/.zinit" && command chmod g-rwX "$HOME/.zinit"
+    command git clone https://github.com/zdharma/zinit "$HOME/.zinit/bin" && \
+        print -P "%F{33}▓▒░ %F{34}Installation successful.%f%b" || \
+        print -P "%F{160}▓▒░ The clone has failed.%f%b"
+fi
+
+source "$HOME/.zinit/bin/zinit.zsh"
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
+
+# Load a few important annexes, without Turbo
+# (this is currently required for annexes)
+zinit light-mode for \
+    zinit-zsh/z-a-rust \
+    zinit-zsh/z-a-as-monitor \
+    zinit-zsh/z-a-patch-dl \
+    zinit-zsh/z-a-bin-gem-node
+
+
+zplugin ice blockf
+zplugin light zsh-users/zsh-completions
+zplugin light zsh-users/zsh-autosuggestions
+zplugin light zdharma/fast-syntax-highlighting
+
+zplugin ice as"program" pick"$ZPFX/bin/git-*" make="PREFIX=$ZPFX"
+zplugin snippet OMZ::plugins/git/git.plugin.zsh
+zplugin snippet OMZ::plugins/asdf/asdf.plugin.zsh
+zplugin snippet OMZ::plugins/dotenv/dotenv.plugin.zsh
+zplugin snippet OMZ::plugins/fzf/fzf.plugin.zsh
+#zplugin snippet OMZ::plugins/ssh-agent/ssh-agent.plugin.zsh
+zplugin snippet OMZ::plugins/safe-paste/safe-paste.plugin.zsh
+
+# Plugin history-search-multi-word loaded with tracking.
+zplugin load zdharma/history-search-multi-word
+zplugin ice depth=1; zplugin light romkatv/powerlevel10k
+zplugin snippet OMZ::plugins/autojump/autojump.plugin.zsh
+zplugin snippet OMZ::plugins/docker/_docker
+zplugin snippet OMZ::plugins/docker-compose/docker-compose.plugin.zsh
+zplugin snippet OMZ::plugins/vscode/vscode.plugin.zsh
+zplugin cdclear -q # <- forget completions provided up to this moment
+zstyle ':completion:*:*:make:*' tag-order 'targets'
+
+setopt promptsubst
+
+### End of Zinit's installer chunk
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+export JAVA_HOME=/usr/local/Cellar/openjdk/16.0.2/bin
+export JAVA_PATH=$JAVA_HOME
+export PATH="$JAVA_HOME:$PATH"
+
+# source functions defined in a .functions file
+[[ ! -f ~/.functions ]] || source ~/.functions
+
+# Preferred editor for local and remote sessions
+if [[ -n $SSH_CONNECTION ]]; then
+  export EDITOR='vim'
+fi
+
+# Compilation flags
+export ARCHFLAGS="-arch x86_64"
+
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+
+# use exa for ls
+alias ls='exa -abghl'
+alias restart-docker="sudo systemctl stop docker; sudo systemctl start docker"
+# rename chezmoi to dotfiles
+alias dotfiles='chezmoi'
+
+export PATH="$HOME/.rbenv/bin:$PATH"
+eval "$(rbenv init -)"
+RBENV_VERSION=2.5.8
+alias laws='docker run --network localstack --rm -v ${HOME}/.localstack/credentials:/root/.aws/credentials:ro -it     amazon/aws-cli --endpoint-url=http://localstack:4566'
+alias disks="mount | awk -F' ' '{ printf \"%s\t%s\n\",\$1,\$3; }' | column -t | egrep ^/dev/ | sort"
+alias count='find . -type f | wc -l'
+alias trash='mv --force -t ~/.local/share/Trash '
+alias git-master='cd `git rev-parse --show-toplevel` && git checkout master && git pull'
+alias etcher="/usr/bin/balenaEtcher"
+alias docker-proxy-pids="export proxy_pids=\"(\$(sudo netstat -tlnp | awk '/docker-proxy */ {split(\$NF,a,\"/\");     print a[2],a[1]}'))\""
+alias git-fix-ff-not-possible="git pull origin master --rebase"
+# alias gparted="sudo nohup gparted &"
+
+export BAT_THEME="Dracula"
+alias cat2="bat"
+
+# nmap specific aliases
+alias with-os-discovery="-O -A --fuzzy --script smb-os-discovery.nse"
+alias nmap="nmap --stats-every 10s"
+alias nmap-as-csv="-oX ./scan-results.xml; python ~/projects/nmap/nmap_xml_parser.py -f ./scan-results.xml -p"
+
+export GOROOT=/usr/local/opt/go/libexec
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin
+export PATH=$PATH:$GOROOT/bin
+export PATH=$PATH:$HOME/bin
+export GO111MODULE=on
+# export DOTENV=~/dev/project/ref/
+# source ~/dev/buffalo_completion.sh
+
+export AUTOENV_ASSUME_YES=true
+source /usr/local/opt/autoenv/activate.sh
+alias de-env="deactivate"
+source ~/find_pid_cmd
+#alias delete-all-tagname="sudo docker rmi $(sudo docker images --format '{{.Repository}}:{{.Tag}}' | grep      'tagname')"
+#alias delete-stopped-containers="sudo docker ps -a | grep Exit | cut -d ' ' -f 1 | xargs sudo docker rm"
+#alias delete-dangling-images="sudo docker images -q --filter dangling=true | xargs sudo docker rmi"
+# export PATH="/home/erik/.krew/bin:/home/erik/.local/bin:$PATH:/home/erik/bin"
+#alias kubectl-login="aws eks --region us-west-2 --profile \$AWS_PROFILE update-kubeconfig --name "
+#[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
+# alias vpn-stitched-up="sudo wg-quick up stitchedin"
+# alias vpn-stitched-down="sudo wg-quick down stitchedin"
+# alias docker-login-github="cat ~/.docker/github-personal-access-token | docker login https://docker.pkg.github.com -u nelsestu --password-stdin"
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# Setup cdg function
+# ------------------
+unalias cdg 2> /dev/null
+cdg() {
+   local dest_dir=$(cdscuts_glob_echo | fzf )
+   if [[ $dest_dir != '' ]]; then
+      cd "$dest_dir"
+   fi
+}
+export -f cdg > /dev/null
+cdg-add () {
+    local curr_dir="${PWD} # $*"
+    if ! grep -Fxq "$curr_dir" ~/.cdg_paths; then
+        echo "$curr_dir" >> ~/.cdg_paths
+    fi
+}
+
+source virtualenvwrapper.sh
+if [ -z "$SSH_AUTH_SOCK" ] ; then
+  eval `ssh-agent -s`
+  ssh-add
+fi
+

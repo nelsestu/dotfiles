@@ -1,0 +1,9 @@
+mongosh_path = "/usr/local/bin/mongosh"
+
+[default]
+  org_id = "60cebd21eda22573245185bb"
+  output = "json"
+  private_api_key = "8e5f57f3-28e8-4ea5-9643-c387b16b11c4"
+  project_id = "60cebd21ebcf9c023c887de9"
+  public_api_key = "cjqadelg"
+  service = "cloud"
