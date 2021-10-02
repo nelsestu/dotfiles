@@ -1,0 +1,5 @@
+[".ilts"]
+	type = "archive"
+	url = "https://github.com/nelsestu/ilts/archive/refs/heads/master.tar.gz"
+	exact = true
+	stripComponents = 1

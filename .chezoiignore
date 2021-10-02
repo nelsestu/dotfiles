@@ -1,0 +1,4 @@
+.install_dotfiles.sh
+settings.json
+.vim_runtime/temp_dirs/*.vim_runtime/temp_dirs/*
+install.sh

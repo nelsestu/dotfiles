@@ -1,183 +1,197 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
+#
+# Exports
+#
 
-# Path to your oh-my-zsh installation.
+module_path+=("$HOME/.zinit/bin/zmodules/Src"); zmodload zdharma/zplugin &>/dev/null
+
+typeset -g HISTSIZE=290000 SAVEHIST=290000 HISTFILE=~/.zhistory ABSD=${${(M)OSTYPE:#*(darwin|bsd)*}:+1}
+
+typeset -ga mylogs
+zflai-msg() { mylogs+=( "$1" ); }
+zflai-assert() { mylogs+=( "$4"${${${1:#$2}:+FAIL}:-OK}": $3" ); }
+
+(( ABSD )) && {
+    export LSCOLORS=dxfxcxdxbxegedabagacad CLICOLOR="1" 
+    export ANDROID_ROOT=/opt/android
+}
+
+export LESS="-iRFX" CVS_RSH="ssh"
+
+umask 022
+
+#
+# Setopts
+#
+
+setopt interactive_comments hist_ignore_dups  octal_zeroes   no_prompt_cr
+setopt no_hist_no_functions no_always_to_end  append_history list_packed
+setopt inc_append_history   complete_in_word  no_auto_menu   auto_pushd
+setopt pushd_ignore_dups    no_glob_complete  no_glob_dots   c_bases
+setopt numeric_glob_sort    no_share_history  promptsubst    auto_cd
+setopt rc_quotes            extendedglob      notify
+
+#setopt IGNORE_EOF
+#setopt NO_SHORT_LOOPS
+#setopt PRINT_EXIT_VALUE
+#setopt RM_STAR_WAIT
+
+#
+# Bindkeys
+#
+
+autoload up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+
+bindkey -v
+[[ -n "$terminfo[kpp]"   ]] && bindkey "$terminfo[kpp]"   up-line-or-beginning-search   # PAGE UP
+[[ -n "$terminfo[knp]"   ]] && bindkey "$terminfo[knp]"   down-line-or-beginning-search # PAGE DOWN
+[[ -n "$terminfo[khome]" ]] && bindkey "$terminfo[khome]" beginning-of-line             # HOME
+[[ -n "$terminfo[kend]"  ]] && bindkey "$terminfo[kend]"  end-of-line                   # END
+[[ -n "$terminfo[kdch1]" ]] && bindkey "$terminfo[kdch1]" delete-char                   # DELETE
+[[ -n "$terminfo[kbs]"   ]] && bindkey "$terminfo[kbs]"   backward-delete-char          # BACKSPACE
+
+zflai-assert "${+terminfo[kpp]}${+terminfo[knp]}${+terminfo[khome]}${+terminfo[kend]}" "1111" "terminfo test" "[zshrc] "
+
+bindkey "^A"      beginning-of-line     "^E"      end-of-line
+bindkey "^?"      backward-delete-char  "^H"      backward-delete-char
+bindkey "^W"      backward-kill-word    "\e[1~"   beginning-of-line
+bindkey "\e[7~"   beginning-of-line     "\e[H"    beginning-of-line
+bindkey "\e[4~"   end-of-line           "\e[8~"   end-of-line
+bindkey "\e[F"    end-of-line           "\e[3~"   delete-char
+bindkey "^J"      accept-line           "^M"      accept-line
+bindkey "^T"      accept-line           "^R"      history-incremental-search-backward
+
+#
+# Modules
+#
+
+zmodload -i zsh/complist
+
+#
+# Autoloads
+#
+
+autoload -Uz allopt zed zmv zcalc colors
+colors
+
+autoload -Uz edit-command-line
+zle -N edit-command-line
+#bindkey -M vicmd v edit-command-line
+
+autoload -Uz select-word-style
+select-word-style shell
+
+autoload -Uz url-quote-magic
+zle -N self-insert url-quote-magic
+
+#url_quote_commands=(links wget youtube-dl curl); zstyle -e :urlglobber url-other-schema '[[ $url_quote_commands[(i)$words[1]] -le ${#url_quote_commands} ]] && reply=("*") || reply=(http https ftp ssh)'
+
+#
+# Aliases
+#
+
+alias pl='print -rl --'
+#alias ls="gls -bh --color=auto"
+#alias ls="exa -bh --color=auto"
+alias ls='exa -abghl'
+alias l="ls"      l.='ls -d .*'   la='ls -a'   ll='ls -lbt created'  rm='command rm -i'
+alias df='df -h'  du='du -h'      cp='cp -v'   mv='mv -v'      plast="last -20"
+alias reload="exec $SHELL -l -i"  grep="command grep --colour=auto --binary-files=without-match --directories=skip"
+alias lynx="command lynx -accept-all-cookies"  ult="ulimit -c 195312; echo $$"
+ulimit -c unlimited
+
+# Git
+alias g1log_branches="git log --color=always --oneline --decorate --graph --branches"
+alias g1log_branches_intag="echo You can append a tag name; LANG=C sleep 0.5; git log --color=always --oneline --decorate --graph --branches"
+alias g1log_simplify_decfull="git log --color=always --decorate=full --simplify-by-decoration"
+alias g1log_simplify="git log --color=always --simplify-by-decoration --decorate"
+
+# Image Magick
+alias i1montage_concat_topbo_black="montage -mode concatenate -tile 1x -background black"
+alias i1montage_concat_topbo_white="montage -mode concatenate -tile 1x -background white"
+alias i1convert_append_topbo_black="convert -append -background black"
+alias i1convert_append_topbo_white="convert -append -background white"
+alias i1convert_append_lefri_black="convert +append -background black"
+alias i1convert_append_lefri_white="convert +append -background white"
+
+
+# Quick typing
+alias n1ip="dig +short myip.opendns.com @resolver1.opendns.com"
+alias n1ips="ifconfig -a | grep -o 'inet6\? \(addr:\)\?\s\?\(\(\([0-9]\+\.\)\{3\}[0-9]\+\)\|[a-fA-F0-9:]\+\)' | awk '{ sub(/inet6? (addr:)? ?/, \"\"); print }'"
+alias n1sniff="sudo ngrep -d 'en1' -t '^(GET|POST) ' 'tcp and port 80'"
+alias n1httpdump="sudo tcpdump -i en1 -n -s 0 -w - | grep -a -o -E \"Host\: .*|GET \/.*\""
+
+# Show/hide hidden files in Finder
+alias x1show_hidden="defaults write com.apple.finder AppleShowAllFiles -bool true && killall Finder"
+alias x1hide_hidden="defaults write com.apple.finder AppleShowAllFiles -bool false && killall Finder"
+
+# Hide/show all desktop icons (useful when presenting)
+alias x1hide_desktop="defaults write com.apple.finder CreateDesktop -bool false && killall Finder"
+alias x1show_desktop="defaults write com.apple.finder CreateDesktop -bool true && killall Finder"
+
+# Disable / enable Spotlight
+alias x1spotoff="sudo mdutil -a -i off"
+alias x1spoton="sudo mdutil -a -i on"
+
+# Flush Directory Service cache
+alias x1flush="dscacheutil -flushcache && killall -HUP mDNSResponder"
+
+alias x1mute="osascript -e 'set volume output muted true'"
+alias x1lock="/System/Library/CoreServices/Menu\ Extras/User.menu/Contents/Resources/CGSession -suspend"
+
+# Email screenshot
+alias x1email_screen="screencapture -C -M screen-`date +%d.%m.%Y-%H`.png"
+alias x1email_screen10s="screencapture -T 10 -C -M screen-`date +%d.%m.%Y-%H`.png"
+alias x1email_window="screencapture -W -M screen-`date +%d.%m.%Y-%H`.png"
+alias x1email_snippet="screencapture -s -M screen-`date +%d.%m.%Y-%H`.png"
+
+#
+# General tools
+#
+
+alias newest_ls="ls -lh --sort date -r --color=always | head -25"
+alias cpfile="rsync --progress"
+alias zmv='noglob zmv -w'
+alias recently_changed='find . -newerct "15 minute ago" -print'
+recently_changed_x() { find . -newerct "$1 minute ago" -print; }
+alias -g SPRNG=" | curl -F 'sprunge=<-' http://sprunge.us"
+
+#
+# Patches for various problems
+#
+
+alias slocate='locate'
+alias updatedb="sudo /usr/libexec/locate.updatedb"
+
+source "$HOME/.functions"
 export ZSH="/Users/enelsestuen/.oh-my-zsh"
-
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time oh-my-zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="robbyrussell"
-
-# Set list of themes to pick from when loading at random
-# Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in $ZSH/themes/
-# If set to an empty array, this variable will have no effect.
-# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
-
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
-
-# Uncomment the following line to use hyphen-insensitive completion.
-# Case-sensitive completion must be off. _ and - will be interchangeable.
-# HYPHEN_INSENSITIVE="true"
-
-# Uncomment the following line to disable bi-weekly auto-update checks.
-# DISABLE_AUTO_UPDATE="true"
-
-# Uncomment the following line to automatically update without prompting.
-# DISABLE_UPDATE_PROMPT="true"
-
-# Uncomment the following line to change how often to auto-update (in days).
-# export UPDATE_ZSH_DAYS=13
-
-# Uncomment the following line if pasting URLs and other text is messed up.
-# DISABLE_MAGIC_FUNCTIONS="true"
-
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
-
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
-
-# Uncomment the following line to enable command auto-correction.
-# ENABLE_CORRECTION="true"
-
-# Uncomment the following line to display red dots whilst waiting for completion.
-# Caution: this setting can cause issues with multiline prompts (zsh 5.7.1 and newer seem to work)
-# See https://github.com/ohmyzsh/ohmyzsh/issues/5765
-# COMPLETION_WAITING_DOTS="true"
-
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
-
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# You can set one of the optional three formats:
-# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# or set a custom format using the strftime function format specifications,
-# see 'man strftime' for details.
-# HIST_STAMPS="mm/dd/yyyy"
-
-# Would you like to use another custom folder than $ZSH/custom?
-# ZSH_CUSTOM=/path/to/new-custom-folder
-
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-plugins=(git)
-
-source $ZSH/oh-my-zsh.sh
-
-# User configuration
-
-# export MANPATH="/usr/local/man:$MANPATH"
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
-# Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
-
-# Set personal aliases, overriding those provided by oh-my-zsh libs,
-# plugins, and themes. Aliases can be placed here, though oh-my-zsh
-# users are encouraged to define aliases within the ZSH_CUSTOM folder.
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-#
 export PATH="/usr/local/bin:/usr/local/sbin:$PATH"
 export PATH="/usr/local/opt/python/libexec/bin:$PATH"
-
-### Added by Zinit's installer
-if [[ ! -f $HOME/.zinit/bin/zinit.zsh ]]; then
-    print -P "%F{33}▓▒░ %F{220}Installing %F{33}DHARMA%F{220} Initiative Plugin Manager (%F{33}zdharma/zinit%F{220})…%f"
-    command mkdir -p "$HOME/.zinit" && command chmod g-rwX "$HOME/.zinit"
-    command git clone https://github.com/zdharma/zinit "$HOME/.zinit/bin" && \
-        print -P "%F{33}▓▒░ %F{34}Installation successful.%f%b" || \
-        print -P "%F{160}▓▒░ The clone has failed.%f%b"
-fi
-
-source "$HOME/.zinit/bin/zinit.zsh"
-autoload -Uz _zinit
-(( ${+_comps} )) && _comps[zinit]=_zinit
-
-# Load a few important annexes, without Turbo
-# (this is currently required for annexes)
-zinit light-mode for \
-    zinit-zsh/z-a-rust \
-    zinit-zsh/z-a-as-monitor \
-    zinit-zsh/z-a-patch-dl \
-    zinit-zsh/z-a-bin-gem-node
-
-
-zplugin ice blockf
-zplugin light zsh-users/zsh-completions
-zplugin light zsh-users/zsh-autosuggestions
-zplugin light zdharma/fast-syntax-highlighting
-
-zplugin ice as"program" pick"$ZPFX/bin/git-*" make="PREFIX=$ZPFX"
-zplugin snippet OMZ::plugins/git/git.plugin.zsh
-zplugin snippet OMZ::plugins/asdf/asdf.plugin.zsh
-zplugin snippet OMZ::plugins/dotenv/dotenv.plugin.zsh
-zplugin snippet OMZ::plugins/fzf/fzf.plugin.zsh
-#zplugin snippet OMZ::plugins/ssh-agent/ssh-agent.plugin.zsh
-zplugin snippet OMZ::plugins/safe-paste/safe-paste.plugin.zsh
-
-# Plugin history-search-multi-word loaded with tracking.
-zplugin load zdharma/history-search-multi-word
-zplugin ice depth=1; zplugin light romkatv/powerlevel10k
-zplugin snippet OMZ::plugins/autojump/autojump.plugin.zsh
-zplugin snippet OMZ::plugins/docker/_docker
-zplugin snippet OMZ::plugins/docker-compose/docker-compose.plugin.zsh
-zplugin snippet OMZ::plugins/vscode/vscode.plugin.zsh
-zplugin cdclear -q # <- forget completions provided up to this moment
-zstyle ':completion:*:*:make:*' tag-order 'targets'
-
-setopt promptsubst
-
-### End of Zinit's installer chunk
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
 export JAVA_HOME=/usr/local/Cellar/openjdk/16.0.2/bin
 export JAVA_PATH=$JAVA_HOME
 export PATH="$JAVA_HOME:$PATH"
-
-# source functions defined in a .functions file
-[[ ! -f ~/.functions ]] || source ~/.functions
-
-# Preferred editor for local and remote sessions
-if [[ -n $SSH_CONNECTION ]]; then
-  export EDITOR='vim'
-fi
-
-# Compilation flags
 export ARCHFLAGS="-arch x86_64"
+export PATH="$HOME/.rbenv/bin:$PATH"
+export BAT_THEME="Dracula"
+export GOROOT=/usr/local/opt/go/libexec
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin
+export PATH=$PATH:$GOROOT/bin
+export PATH=$PATH:$HOME/bin
+export GO111MODULE=on
+export AUTOENV_ASSUME_YES=true
+export -f cdg > /dev/null
+export EDITOR=vi
+export HOMEBREW_AUTO_UPDATE_SECS=86400
+export LDFLAGS="-L/usr/local/opt/zlib/lib"
+export CPPFLAGS="-I/usr/local/opt/zlib/include"
+export PKG_CONFIG_PATH="/usr/local/opt/zlib/lib/pkgconfig"
+export LDFLAGS="-L/usr/local/opt/bison/lib"
 
-test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
-
-# use exa for ls
 alias ls='exa -abghl'
 alias restart-docker="sudo systemctl stop docker; sudo systemctl start docker"
-# rename chezmoi to dotfiles
 alias dotfiles='chezmoi'
-
-export PATH="$HOME/.rbenv/bin:$PATH"
-eval "$(rbenv init -)"
-RBENV_VERSION=2.5.8
 alias laws='docker run --network localstack --rm -v ${HOME}/.localstack/credentials:/root/.aws/credentials:ro -it     amazon/aws-cli --endpoint-url=http://localstack:4566'
 alias disks="mount | awk -F' ' '{ printf \"%s\t%s\n\",\$1,\$3; }' | column -t | egrep ^/dev/ | sort"
 alias count='find . -type f | wc -l'
@@ -186,61 +200,253 @@ alias git-master='cd `git rev-parse --show-toplevel` && git checkout master && g
 alias etcher="/usr/bin/balenaEtcher"
 alias docker-proxy-pids="export proxy_pids=\"(\$(sudo netstat -tlnp | awk '/docker-proxy */ {split(\$NF,a,\"/\");     print a[2],a[1]}'))\""
 alias git-fix-ff-not-possible="git pull origin master --rebase"
-# alias gparted="sudo nohup gparted &"
-
-export BAT_THEME="Dracula"
 alias cat2="bat"
-
-# nmap specific aliases
 alias with-os-discovery="-O -A --fuzzy --script smb-os-discovery.nse"
 alias nmap="nmap --stats-every 10s"
 alias nmap-as-csv="-oX ./scan-results.xml; python ~/projects/nmap/nmap_xml_parser.py -f ./scan-results.xml -p"
-
-export GOROOT=/usr/local/opt/go/libexec
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOPATH/bin
-export PATH=$PATH:$GOROOT/bin
-export PATH=$PATH:$HOME/bin
-export GO111MODULE=on
-# export DOTENV=~/dev/project/ref/
-# source ~/dev/buffalo_completion.sh
-
-export AUTOENV_ASSUME_YES=true
-source /usr/local/opt/autoenv/activate.sh
 alias de-env="deactivate"
-source ~/find_pid_cmd
-#alias delete-all-tagname="sudo docker rmi $(sudo docker images --format '{{.Repository}}:{{.Tag}}' | grep      'tagname')"
-#alias delete-stopped-containers="sudo docker ps -a | grep Exit | cut -d ' ' -f 1 | xargs sudo docker rm"
-#alias delete-dangling-images="sudo docker images -q --filter dangling=true | xargs sudo docker rmi"
-# export PATH="/home/erik/.krew/bin:/home/erik/.local/bin:$PATH:/home/erik/bin"
-#alias kubectl-login="aws eks --region us-west-2 --profile \$AWS_PROFILE update-kubeconfig --name "
-#[[ /usr/local/bin/kubectl ]] && source <(kubectl completion zsh)
-# alias vpn-stitched-up="sudo wg-quick up stitchedin"
-# alias vpn-stitched-down="sudo wg-quick down stitchedin"
-# alias docker-login-github="cat ~/.docker/github-personal-access-token | docker login https://docker.pkg.github.com -u nelsestu --password-stdin"
+alias applydot="chezmoi apply --force --verbose"
+alias gripme="nohup grip --browser README.md 0.0.0.0:9999 &>/dev/null &; ps aux | ack \"grip\""
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+unset altxt
 
-# Setup cdg function
-# ------------------
-unalias cdg 2> /dev/null
-cdg() {
-   local dest_dir=$(cdscuts_glob_echo | fzf )
-   if [[ $dest_dir != '' ]]; then
-      cd "$dest_dir"
-   fi
-}
-export -f cdg > /dev/null
-cdg-add () {
-    local curr_dir="${PWD} # $*"
-    if ! grep -Fxq "$curr_dir" ~/.cdg_paths; then
-        echo "$curr_dir" >> ~/.cdg_paths
-    fi
+fpath+=( $HOME/functions )
+
+autoload -Uz psprobe_host   psffconv    pssetup_ssl_cert    psrecompile    pscopy_xauth  \
+             psls           pslist      psfind \
+             mandelbrot     optlbin_on  optlbin_off         localbin_off    g1all   g1zip \
+             t1uncolor 	    t1fromhex   t1countdown \
+             f1rechg_x_min  f1biggest \
+             n1gglinks      n1dict      n1diki              n1gglinks      n1ggw3m         n1ling  n1ssl_tunnel \
+	     n1ssl_rtunnel  \
+             pngimage       deploy-code deploy-message
+
+function run_diso {
+  sh -c "$@" &
+  disown
 }
 
-source virtualenvwrapper.sh
-if [ -z "$SSH_AUTH_SOCK" ] ; then
-  eval `ssh-agent -s`
-  ssh-add
-fi
+function pbcopydir {
+  pwd | tr -d "\r\n" | pbcopy
+}
 
+function from-where {
+    echo $^fpath/$_comps[$1](N)
+    whence -v $_comps[$1]
+    #which $_comps[$1] 2>&1 | head
+}
+
+whichcomp() {
+    for 1; do
+        ( print -raC 2 -- $^fpath/${_comps[$1]:?unknown command}(NP*$1*) )
+    done
+}
+
+osxnotify() {
+    osascript -e 'display notification "'"$*"'"'
+}
+
+
+#PS1="READY > "
+zstyle ":plugin:zconvey" greeting "none"
+zstyle ':notify:*' command-complete-timeout 3
+zstyle ':notify:*' notifier plg-zsh-notify
+
+palette() { local colors; for n in {000..255}; do colors+=("%F{$n}$n%f"); done; print -cP $colors; }
+
+# Run redis-server port forwarding, from the public 3333 port
+#n1ssl_rtunnel 3333 localhost 4815 zredis.pem zredis_client.crt &!
+zflai-msg "[zshrc] ssl tunnel PID: $!"
+
+#
+# Zplugin
+#
+
+typeset -F4 SECONDS=0
+
+[[ ! -f ~/.zinit/bin/zinit.zsh ]] && {
+    command mkdir -p ~/.zinit
+    command git clone https://github.com/zdharma/zinit ~/.zinit/bin
+}
+
+source "$HOME/.zinit/bin/zinit.zsh"
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
+
+# Zplugin annexes
+# zinit-zsh/z-a-man \
+zinit light-mode for \
+    zinit-zsh/z-a-as-monitor \
+    zinit-zsh/z-a-patch-dl \
+    zinit-zsh/z-a-submods \
+    zinit-zsh/z-a-bin-gem-node \
+    zinit-zsh/z-a-rust
+
+# Fast-syntax-highlighting & autosuggestions
+zinit wait lucid for \
+ atinit"ZINIT[COMPINIT_OPTS]=-C; zpcompinit; zpcdreplay" \
+    zdharma/fast-syntax-highlighting \
+ atload"!_zsh_autosuggest_start" \
+    zsh-users/zsh-autosuggestions \
+ blockf \
+    zsh-users/zsh-completions
+
+#zinit wait lucid is-snippet as"completion" for \
+#   OMZ::docker/_docker \
+#  OMZ::docker-compose/_docker-compose \
+    # need to get docker completions working  OMZ::plugins/docker \
+
+# lib/git.zsh is loaded mostly to stay in touch with the plugin (for the users)
+# and for the themes 2 & 3 (lambda-mod-zsh-theme & lambda-gitster)
+zinit wait lucid for \
+    zdharma/zsh-unique-id \
+    OMZ::lib/git.zsh \
+ atload"unalias grv g" \
+    OMZ::plugins/git/git.plugin.zsh
+
+# zinit p10k plugin
+zinit ice depth=1; zinit light romkatv/powerlevel10k
+
+zinit wait"2" lucid as"null" for \
+ sbin atclone"./build.zsh" atpull"%atclone" \
+    molovo/zunit \
+ sbin"color.zsh -> color" \
+    molovo/color
+
+# Zconvey shell integration plugin
+zinit wait lucid \
+ sbin"cmds/zc-bg-notify" sbin"cmds/plg-zsh-notify" for \
+    zdharma/zconvey
+
+# zsh-startify, a vim-startify like plugin
+: zinit wait"0b" lucid atload"zsh-startify" for zdharma/zsh-startify
+: zinit wait lucid pick"manydots-magic" compile"manydots-magic" for knu/zsh-manydots-magic
+
+# zsh-autopair
+# fzf-marks, at slot 0, for quick Ctrl-G accessibility
+zinit wait lucid for \
+    hlissner/zsh-autopair \
+    urbainvaes/fzf-marks
+
+# A few wait"1 plugins
+zinit wait"1" lucid for \
+    psprint/zsh-navigation-tools \
+ atinit'zstyle ":history-search-multi-word" page-size "7"' \
+    zdharma/history-search-multi-word \
+ atinit"local zew_word_style=whitespace" \
+    psprint/zsh-editing-workbench
+
+# ogham/exa, sharkdp/fd, fzf
+zinit wait"2" lucid as"null" from"gh-r" for \
+    mv"exa* -> exa" sbin  ogham/exa \
+    mv"fd* -> fd" sbin"fd/fd"  @sharkdp/fd
+
+# fzf, fzy
+zinit pack"bgn-binary" for fzf
+zinit pack"bgn" for fzy
+
+# A few wait'2' plugins
+zinit wait"2" lucid for \
+    zdharma/declare-zsh \
+    zdharma/zflai \
+ blockf \
+    zdharma/zui \
+    zinit-zsh/zinit-console \
+ trigger-load'!crasis' \
+    zdharma/zinit-crasis \
+ atinit"forgit_ignore='fgi'" \
+    wfxr/forgit
+
+# git-cal
+zinit wait"2" lucid as"null" \
+ atclone'perl Makefile.PL PREFIX=$ZPFX' \
+ atpull'%atclone' make sbin"git-cal" for \
+    k4rthik/git-cal
+
+# A few wait'3' git extensions
+zinit as"null" wait"3" lucid for \
+    sbin atload"export _MENU_THEME=legacy" \
+        arzzen/git-quick-stats \
+    sbin iwata/git-now \
+    sbin"bin/git-dsf;bin/diff-so-fancy" zdharma/zsh-diff-so-fancy \
+    sbin"git-url;git-guclone" make"GITURL_NO_CGITURL=1" zdharma/git-url
+
+# fbterm
+: zinit wait"3" lucid as"command" \
+ pick"$ZPFX/bin/fbterm" \
+ dl"https://bugs.archlinux.org/task/46860?getfile=13513 -> ins.patch" \
+ dl"https://aur.archlinux.org/cgit/aur.git/plain/0001-Fix-build-with-gcc-6.patch?h=fbterm-git" \
+ patch"ins.patch; 0001-Fix-build-with-gcc-6.patch" \
+ atclone"./configure --prefix=$ZPFX" \
+ atpull"%atclone" \
+ make"install" reset for \
+    izmntuk/fbterm
+
+# asciinema
+: zinit wait lucid as"command" \
+ atinit"export PYTHONPATH=$ZPFX/lib/python3.7/site-packages/" \
+ atclone"PYTHONPATH=$ZPFX/lib/python3.7/site-packages/ \
+ python3 setup.py --quiet install --prefix $ZPFX" \
+ atpull'%atclone' test'0' \
+ pick"$ZPFX/bin/asciinema" for \
+    asciinema/asciinema
+
+# Notifications, configured to use zconvey
+: zinit wait lucid for marzocchi/zsh-notify
+
+zflai-msg "[zshrc] Zplugin block took ${(M)$(( SECONDS * 1000 ))#*.?} ms"
+
+MYPROMPT=1
+
+#
+# Zstyles & other
+#
+
+zle -N znt-kill-widget
+bindkey "^Y" znt-kill-widget
+
+# cdpath=( "$HOME" "$HOME/github" "$HOME/github2" "$HOME/gitlab" )
+zstyle ':completion::*:ls::*' fzf-completion-opts --preview='eval head {1}'
+zstyle ':completion:*:*:kill:*' menu yes select
+zstyle ':completion:*:kill:*'   force-list always
+zstyle ":completion:*:descriptions" format "%B%d%b"
+zstyle ':completion:*:*:*:default' menu yes select search
+#zstyle ":completion:*" list-colors “${(s.:.)LS_COLORS}”
+
+function double-accept { deploy-code "BUFFER[-1]=''"; }
+zle -N double-accept
+bindkey -M menuselect '^F' history-incremental-search-forward
+bindkey -M menuselect '^R' history-incremental-search-backward
+bindkey -M menuselect ' ' .accept-line
+
+function mem() { ps -axv | grep $$  }
+
+
+zflai-msg "[zshrc] Finishing, loaded custom modules: ${(j:, :@)${(k)modules[@]}:#zsh/*}"
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# ensure virtualenvwrapper actions are available
+source /usr/local/bin/virtualenvwrapper.sh
+# cd $HOME
+
+export PATH="/usr/local/opt/openssl@3/bin:$PATH"
+
+# For compilers to find openssl@3 you may need to set:
+export LDFLAGS="-L/usr/local/opt/openssl@3/lib"
+export CPPFLAGS="-I/usr/local/opt/openssl@3/include"
+
+# For pkg-config to find openssl@3 you may need to set:
+export PKG_CONFIG_PATH="/usr/local/opt/openssl@3/lib/pkgconfig"
+
+export NVM_DIR="$HOME/.nvm"
+  [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
+  [ -s "/usr/local/opt/nvm/etc/bash_completion.d/nvm" ] && . "/usr/local/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
+
+alias coursera-dl='docker run --rm -it --env-file ./.env -v "$HOME/projects/personal/coursera:/courses" mshytikov/coursera-dl-docker -u "\$COURSERA_USERNAME" -p "\$COURSERA_PASSWORD"'
+
+
+source /usr/local/opt/asdf/libexec/asdf.sh
+
+# source /usr/local/opt/asdf/libexec/asdf.bash

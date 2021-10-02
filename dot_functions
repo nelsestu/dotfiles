@@ -1,0 +1,581 @@
+# Simple calculator
+function calc() {
+    local result="";
+    result="$(printf "scale=10;$*\n" | bc --mathlib | tr -d '\\\n')";
+    #                       └─ default (when `--mathlib` is used) is 20
+    #
+    if [[ "$result" == *.* ]]; then
+        # improve the output for decimal numbers
+        printf "$result" |
+        sed -e 's/^\./0./'        `# add "0" for cases like ".5"` \
+            -e 's/^-\./-0./'      `# add "0" for cases like "-.5"`\
+            -e 's/0*$//;s/\.$//';  # remove trailing zeros
+    else
+        printf "$result";
+    fi;
+    printf "\n";
+}
+
+# Create a new directory and enter it
+function mkd() {
+    mkdir -p "$@" && cd "$_";
+}
+
+# Change working directory to the top-most Finder window location
+function cdf() { # short for `cdfinder`
+    cd "$(osascript -e 'tell app "Finder" to POSIX path of (insertion location as alias)')";
+}
+
+# Create a .tar.gz archive, using `zopfli`, `pigz` or `gzip` for compression
+function targz() {
+    local tmpFile="${@%/}.tar";
+    tar -cvf "${tmpFile}" --exclude=".DS_Store" "${@}" || return 1;
+
+    size=$(
+        stat -f"%z" "${tmpFile}" 2> /dev/null; # OS X `stat`
+        stat -c"%s" "${tmpFile}" 2> /dev/null # GNU `stat`
+    );
+
+    local cmd="";
+    if (( size < 52428800 )) && hash zopfli 2> /dev/null; then
+        # the .tar file is smaller than 50 MB and Zopfli is available; use it
+        cmd="zopfli";
+    else
+        if hash pigz 2> /dev/null; then
+            cmd="pigz";
+        else
+            cmd="gzip";
+        fi;
+    fi;
+
+    echo "Compressing .tar using \`${cmd}\`…";
+    "${cmd}" -v "${tmpFile}" || return 1;
+    [ -f "${tmpFile}" ] && rm "${tmpFile}";
+    echo "${tmpFile}.gz created successfully.";
+}
+
+# Determine size of a file or total size of a directory
+function fs() {
+    if du -b /dev/null > /dev/null 2>&1; then
+        local arg=-sbh;
+    else
+        local arg=-sh;
+    fi
+    if [[ -n "$@" ]]; then
+        du $arg -- "$@";
+    else
+        du $arg .[^.]* *;
+    fi;
+}
+
+# Use Git’s colored diff when available
+hash git &>/dev/null;
+if [ $? -eq 0 ]; then
+    function diff() {
+        git diff --no-index --color-words "$@";
+    }
+fi;
+
+# Create a data URL from a file
+function dataurl() {
+    local mimeType=$(file -b --mime-type "$1");
+    if [[ $mimeType == text/* ]]; then
+        mimeType="${mimeType};charset=utf-8";
+    fi
+    echo "data:${mimeType};base64,$(openssl base64 -in "$1" | tr -d '\n')";
+}
+
+# Create a git.io short URL
+function gitio() {
+    if [ -z "${1}" -o -z "${2}" ]; then
+        echo "Usage: \`gitio slug url\`";
+        return 1;
+    fi;
+    curl -i http://git.io/ -F "url=${2}" -F "code=${1}";
+}
+
+# Start an HTTP server from a directory, optionally specifying the port
+function server() {
+    local port="${1:-8000}";
+    sleep 1 && open "http://localhost:${port}/" &
+    # Set the default Content-Type to `text/plain` instead of `application/octet-stream`
+    # And serve everything as UTF-8 (although not technically correct, this doesn’t break anything for binary files)
+    python -c $'import SimpleHTTPServer;\nmap = SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map;\nmap[""] = "text/plain";\nfor key, value in map.items():\n\tmap[key] = value + ";charset=UTF-8";\nSimpleHTTPServer.test();' "$port";
+}
+
+# Start a PHP server from a directory, optionally specifying the port
+# (Requires PHP 5.4.0+.)
+function phpserver() {
+    local port="${1:-4000}";
+    local ip=$(ipconfig getifaddr en1);
+    sleep 1 && open "http://${ip}:${port}/" &
+    php -S "${ip}:${port}";
+}
+
+# Compare original and gzipped file size
+function gz() {
+    local origsize=$(wc -c < "$1");
+    local gzipsize=$(gzip -c "$1" | wc -c);
+    local ratio=$(echo "$gzipsize * 100 / $origsize" | bc -l);
+    printf "orig: %d bytes\n" "$origsize";
+    printf "gzip: %d bytes (%2.2f%%)\n" "$gzipsize" "$ratio";
+}
+
+function clear-port(){
+   if [ -z $@ ]; then
+       echo 'usage: clear-port $port'
+   else
+     sudo kill -9 $(sudo lsof -t -i:$1)
+   fi
+ }
+ function check-ssh-agent() {
+   if ps -p $SSH_AGENT_PID > /dev/null
+   then
+      echo "ssh-agent is already running"
+      # Do something knowing the pid exists, i.e. the process with $PID is running
+   else
+     eval `ssh-agent -s`
+   fi
+ }
+ function urldecode() {
+     python -c "import sys; from urllib.parse import unquote as urldecode; print(urldecode(sys.argv[1]))" "$1"
+   # ex:
+   # str="this+is+%2F+%2B+%2C+.+url+%23%24coded"
+   # decoded=$(urldecode "$str"}
+   # printf '%s\n' "$decoded"
+ }
+ function urlencode(){
+     python -c "import sys; from urllib.parse import quote as urlencode; print(urlencode(sys.argv[1]))" "$1"
+ }
+ function json-format() {
+     if test -f "$1"; then
+         python -m json.tool "$1"
+     else
+         echo "$1" | python -m json.tool
+     fi
+ }
+ function ipface(){
+     python -c "exec('import netifaces\nfor iface in netifaces.interfaces():\n    print(iface)\n    print(netifaces.   ifaddresses(iface)[netifaces.AF_LINK][0][\"addr\"])\n    print((netifaces.ifaddresses(iface).get(netifaces.AF_INET,   [{\"addr\":\"...none...\"}]) or [{\"addr\":\"...none...\"}])[0][\"addr\"])\n    print(\"--------\")')"
+
+ }
+
+# Syntax-highlight JSON strings or files
+# Usage: `json '{"foo":42}'` or `echo '{"foo":42}' | json`
+function json() {
+    if [ -t 0 ]; then # argument
+        python -mjson.tool <<< "$*" | pygmentize -l javascript;
+    else # pipe
+        python -mjson.tool | pygmentize -l javascript;
+    fi;
+}
+
+
+function expand(){
+    TMPFILE=`mktemp /tmp/example.XXXXXXXXXX` || exit 1
+    urldecode $1 >> $TMPFILE
+    python -m json.tool $TMPFILE
+}
+
+# Run `dig` and display the most useful info
+function digga() {
+    dig +nocmd "$1" any +multiline +noall +answer;
+}
+
+# UTF-8-encode a string of Unicode symbols
+function escape() {
+    printf "\\\x%s" $(printf "$@" | xxd -p -c1 -u);
+    # print a newline unless we’re piping the output to another program
+    if [ -t 1 ]; then
+        echo ""; # newline
+    fi;
+}
+
+# Decode \x{ABCD}-style Unicode escape sequences
+function unidecode() {
+    perl -e "binmode(STDOUT, ':utf8'); print \"$@\"";
+    # print a newline unless we’re piping the output to another program
+    if [ -t 1 ]; then
+        echo ""; # newline
+    fi;
+}
+
+# Get a character’s Unicode code point
+function codepoint() {
+    perl -e "use utf8; print sprintf('U+%04X', ord(\"$@\"))";
+    # print a newline unless we’re piping the output to another program
+    if [ -t 1 ]; then
+        echo ""; # newline
+    fi;
+}
+
+# Show all the names (CNs and SANs) listed in the SSL certificate
+# for a given domain
+function getcertnames() {
+    if [ -z "${1}" ]; then
+        echo "ERROR: No domain specified.";
+        return 1;
+    fi;
+
+    local domain="${1}";
+    echo "Testing ${domain}…";
+    echo ""; # newline
+
+    local tmp=$(echo -e "GET / HTTP/1.0\nEOT" \
+        | openssl s_client -connect "${domain}:443" -servername "${domain}" 2>&1);
+
+    if [[ "${tmp}" = *"-----BEGIN CERTIFICATE-----"* ]]; then
+        local certText=$(echo "${tmp}" \
+            | openssl x509 -text -certopt "no_aux, no_header, no_issuer, no_pubkey, \
+            no_serial, no_sigdump, no_signame, no_validity, no_version");
+        echo "Common Name:";
+        echo ""; # newline
+        echo "${certText}" | grep "Subject:" | sed -e "s/^.*CN=//" | sed -e "s/\/emailAddress=.*//";
+        echo ""; # newline
+        echo "Subject Alternative Name(s):";
+        echo ""; # newline
+        echo "${certText}" | grep -A 1 "Subject Alternative Name:" \
+            | sed -e "2s/DNS://g" -e "s/ //g" | tr "," "\n" | tail -n +2;
+        return 0;
+    else
+        echo "ERROR: Certificate not found.";
+        return 1;
+    fi;
+}
+
+# `s` with no arguments opens the current directory in Sublime Text, otherwise
+# opens the given location
+function s() {
+    if [ $# -eq 0 ]; then
+        subl .;
+    else
+        subl "$@";
+    fi;
+}
+
+# `a` with no arguments opens the current directory in Atom Editor, otherwise
+# opens the given location
+function a() {
+    if [ $# -eq 0 ]; then
+        atom .;
+    else
+        atom "$@";
+    fi;
+}
+
+# `v` with no arguments opens the current directory in Vim, otherwise opens the
+# given location
+function v() {
+    if [ $# -eq 0 ]; then
+        vim .;
+    else
+        vim "$@";
+    fi;
+}
+
+# `o` with no arguments opens the current directory, otherwise opens the given
+# location
+function o() {
+    if [ $# -eq 0 ]; then
+        open .;
+    else
+        open "$@";
+    fi;
+}
+
+function ipface(){
+    ip addr | awk '/^[a-zA-Z0-9]+:/ {
+  sub(/:/,"",$2); iface=$0 }
+/^[[:space:]]*inet / {
+  split($2, a, "/")
+  print iface" : "a[1]
+}'
+    # python -c "exec('import netifaces\nfor iface in netifaces.interfaces():\n    print(iface)\n    print(netifaces.   ifaddresses(iface)[netifaces.AF_LINK][0][\"addr\"])\n    print((netifaces.ifaddresses(iface).get(netifaces.AF_INET,   [{\"addr\":\"...none...\"}]) or [{\"addr\":\"...none...\"}])[0][\"addr\"])\n    print(\"--------\")')"
+}
+
+function shallow (){
+    current_branch="$(git rev-parse --abbrev-ref HEAD)"
+
+    if [[ -z "$current_branch" && $# -eq 0 ]]; then
+        if [ -d .git ]; then
+            git clone --mirror --depth=5  file://$PWD ../temp
+            rm -rf .git/objects
+            mv ../temp/{shallow,objects} .git
+            rm -rf ../temp
+            #read -p "do you want to save diskspace by pruning repo history?" -n 1 -r
+            #echo 
+            #if [[ $REPLY =~ ^[Yy]$ ]]; then
+            #    git reflog expire --expire=all --all
+            #    git tag -l | xargs git tag -d
+            #    git stash drop
+            #    git gc --prune=all
+            #fi
+        fi
+    else
+        spec=$1
+        git clone --depth 1 "git@github.com:${spec}.git"
+    fi;
+}
+function orbi(){
+    pushd ~/orbi
+    source ~/orbi/.env/bin/activate
+    pip install -r ~/orbi/requirements.txt
+    # sed -i '474s/.*/    params += ""<{key}>{value}<//{key}>"".format(key = k, value = _map[k])' /home/erik/.local/  lib/python3.9/site-packages/pynetgear/__init__.py
+    python ./orbi.py
+    deactivate
+    popd
+}
+# ="python ~/orbi/orbi.py"
+
+function get_var () {
+    eval 'printf "%s\n" "${'"$1"'}"'
+}
+
+function set_var () {
+    eval "$1=\"\$2\""
+}
+
+dedup_pathvar () {
+    pathvar_name="$1"
+    pathvar_value="$(get_var "$pathvar_name")"
+    deduped_path="$(perl -e 'print join(":",grep { not $seen{$_}++ } split(/:/, $ARGV[0]))' "$pathvar_value")"
+    set_var "$pathvar_name" "$deduped_path"
+}
+
+function extract {
+  if [ -z "$1" ]; then
+     # display usage if no parameters given
+     echo "Usage: extract <path/file_name>.<zip|rar|bz2|gz|tar|tbz2|tgz|Z|7z|xz|ex|tar.bz2|tar.gz|tar.xz>"
+     echo "       extract <path/file_name_1.ext> [path/file_name_2.ext] [path/file_name_3.ext]"
+  else
+     for n in "$@"
+     do
+       if [ -f "$n" ] ; then
+           case "${n%,}" in
+             *.cbt|*.tar.bz2|*.tar.gz|*.tar.xz|*.tbz2|*.tgz|*.txz|*.tar)
+                          tar xvf "$n"       ;;
+             *.lzma)      unlzma ./"$n"      ;;
+             *.bz2)       bunzip2 ./"$n"     ;;
+             *.cbr|*.rar) unrar x -ad ./"$n" ;;
+             *.gz)        gunzip ./"$n"      ;;
+             *.cbz|*.epub|*.zip) unzip ./"$n"       ;;
+             *.z)         uncompress ./"$n"  ;;
+             *.7z|*.apk|*.arj|*.cab|*.cb7|*.chm|*.deb|*.dmg|*.iso|*.lzh|*.msi|*.pkg|*.rpm|*.udf|*.wim|*.xar)
+                          7z x ./"$n"        ;;
+             *.xz)        unxz ./"$n"        ;;
+             *.exe)       cabextract ./"$n"  ;;
+             *.cpio)      cpio -id < ./"$n"  ;;
+             *.cba|*.ace) unace x ./"$n"      ;;
+             *.zpaq)      zpaq x ./"$n"      ;;
+             *.arc)       arc e ./"$n"       ;;
+             *.cso)       ciso 0 ./"$n" ./"$n.iso" && \
+                               extract $n.iso && \rm -f $n ;;
+             *)
+                          echo "extract: '$n' - unknown archive method"
+                          return 1
+                          ;;
+           esac
+       else
+           echo "'$n' - file does not exist"
+           return 1
+       fi
+     done
+ fi
+}
+# `tre` is a shorthand for `tree` with hidden files and color enabled, ignoring
+# the `.git` directory, listing directories first. The output gets piped into
+# `less` with options to preserve color and line numbers, unless the output is
+# small enough for one screen.
+function tre() {
+    tree -aC -I '.git|node_modules|bower_components' --dirsfirst "$@" | less -FRNX;
+}
+
+function pet-select() {
+  BUFFER=$(pet search --query "$LBUFFER")
+  CURSOR=$#BUFFER
+  zle redisplay
+}
+zle -N pet-select
+stty -ixon
+bindkey '^s' pet-select
+
+function pet-last() {
+  PREV=$(fc -lrn | head -n 1)
+  sh -c "pet new `printf %q "$PREV"`"
+}
+
+function pet-clip() {
+	sh -c "pet new `printf %q "$pbpaste"`"
+}
+
+function pet-copy() {
+	pet search | pbcopy
+}
+
+# https://serverfault.com/questions/103501/how-can-i-fully-log-all-bash-scripts-actions
+# some script friendly logging utility functions, depends on
+# go get github.com/wwalker/ilts (for in line time stamps)
+
+alias iso8601="date +%Y-%m-%dT%H:%M:%S"
+
+function justlog(){
+  name=$(basename "$1")
+  log=~/logs/${name}-$(iso8601)
+  "$@" > "$log" 2>&1
+}
+
+function timelog(){
+  name=$(basename "$1")
+  log=~/logs/${name}-$(iso8601)
+  # https://github.com/wwalker/ilts
+  # You could replace ilts with ts
+  # /usr/bin/ts %FT%H:%M:%.S
+  "$@" |& ilts -S -E > "$log" 2>&1
+}
+
+function newestlog(){
+  name=$(basename "$1")
+  ls  ~/logs/"${name}"* | tail -1
+}
+
+function viewlog(){
+  name=$(basename "$1")
+  view $( newestlog "$name" )
+}
+
+function lesslog(){
+  name=$(basename "$1")
+  less $( newestlog "$name" )
+}
+
+
+function count_lines_by_extension () { 
+    find "$pwd" -name "*.$1" | sed 's/.*/"&"/' | xargs  wc -l 
+}
+
+function up()
+{
+    dir=""
+    if [ -z "$1" ]; then
+        dir=..
+    elif [[ $1 =~ ^[0-9]+$ ]]; then
+        x=0
+        while [ $x -lt ${1:-1} ]; do
+            dir=${dir}../
+            x=$(($x+1))
+        done
+    else
+        dir=${PWD%/$1/*}/$1
+    fi
+    cd "$dir";
+}
+
+function upstr()
+{
+    echo "$(up "$1" && pwd)";
+}
+
+function cpf() { cp "$@" && cd "$_"; }
+function mvf() { mv "$@" && cd "$_"; }
+
+# cdp/cdg commands
+# Clear all: cdp -c 
+# Store link to working directory: cdp foo
+function cdp()
+{
+  mkdir -p ~/.cdp
+  dir=""
+  if [ -z "$1" ]; then
+    echo 'Usage: cdp [-c | <name>]' >&2
+  elif [[ "-c" == "$1" ]]; then
+    for name in $(ls ~/.cdp); do
+      unlink ~/.cdp/${name}
+    done
+  else
+    ln -s $(pwd) ~/.cdp/$1
+  fi
+}
+
+# Show all links: cdg
+# Go to link: cdg foo
+function cdg()
+{
+  mkdir -p ~/.cdp
+  if [ -z "$1" ]; then
+    /bin/ls -Al ~/.cdp
+  else
+    cd -P ~/.cdp/$1
+  fi
+}
+
+
+get_distribution() {
+	lsb_dist=""
+	if [ -r /etc/os-release ]; then
+		lsb_dist="$(. /etc/os-release && echo "$ID")"
+    elif is_darwin; then
+        lsb_dist="macOs (darwin)"
+    elif is_wsl; then
+        lsb_dist="WSL running: $lsb_dist" 
+	fi
+	echo "$lsb_dist"
+}
+
+is_dry_run() {
+	if [ -z "$DRY_RUN" ]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+is_wsl() {
+	case "$(uname -r)" in
+	*microsoft* ) true ;; # WSL 2
+	*Microsoft* ) true ;; # WSL 1
+	* ) false;;
+	esac
+}
+
+is_darwin() {
+	case "$(uname -s)" in
+	*darwin* ) true ;;
+	*Darwin* ) true ;;
+	* ) false;;
+	esac
+}
+
+function ls_limit() {
+    dir="$pwd"
+    count=10
+
+    if [ -z "$1" ]; then
+        echo "$pwd -n 10"
+    elif [ -z "$2" ]; then 
+        echo "$1 -n 10"
+        dir="$1"
+    fi
+
+    /bin/ls -Art "$dir" | tail -n $count
+}
+
+export CURRENT_PROJECT_PATH=$HOME/.current-project
+export PINNED_PROJECT_PATH=$HOME/.pinned-project
+
+function chpwd {
+  echo $(pwd) >! $CURRENT_PROJECT_PATH
+}
+
+function pin_current {
+  echo $(pwd) >! $PINNED_PROJECT_PATH
+}
+
+current() {
+  if [[ -f $PINNED_PROJECT_PATH ]]; then
+      mv $PINNED_PROJECT_PATH $CURRENT_PROJECT_PATH
+  fi
+  if [[ -f $CURRENT_PROJECT_PATH ]]; then
+    cd "$(cat $CURRENT_PROJECT_PATH)"
+  fi
+}
+
+current
