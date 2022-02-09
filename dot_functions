@@ -579,3 +579,34 @@ current() {
 }
 
 current
+
+pathadd() {
+    if [ -d "$1" ] && [[ ":$PATH:" != *":$1:"* ]]; then
+        PATH="${PATH:+"$PATH:"}$1"
+    fi
+}
+
+to_md (){
+    if [ -z "$1" ]; then
+        echo "Usage: to_md <source-file> <destination-file>"
+        exit 1
+    fi
+    if [ -z "$2" ]; then
+        echo "Usage: to_md <source-file> <destination-file>"
+        exit 1
+    fi
+    filename=$(echo $(basename "$1") | tr '[:upper:]' '[:lower:]')
+    ebook-convert "$1" "/Users/enelsestuen/projects/personal/docs/docs/$(filename).txt" --pretty-print --txt-output-formatting markdown --keep-links
+    mv "/Users/enelsestuen/projects/personal/docs/docs/$(filename).txt" "/Users/enelsestuen/projects/personal/docs/docs/$(filename).md" 
+}
+
+# pip-save added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+function pip-save() {
+    for pkg in $@; do
+        pip install "$pkg" && {
+            name="$(pip show "$pkg" | grep Name: | awk '{print $2}')";
+            version="$(pip show "$pkg" | grep Version: | awk '{print $2}')";
+            echo "${name}==${version}" >> requirements.txt;
+        }
+    done
+}

@@ -1,7 +1,6 @@
 #
 # Exports
 #
-
 module_path+=("$HOME/.zinit/bin/zmodules/Src"); zmodload zdharma/zplugin &>/dev/null
 
 typeset -g HISTSIZE=290000 SAVEHIST=290000 HISTFILE=~/.zhistory ABSD=${${(M)OSTYPE:#*(darwin|bsd)*}:+1}
@@ -184,10 +183,6 @@ export AUTOENV_ASSUME_YES=true
 export -f cdg > /dev/null
 export EDITOR=vi
 export HOMEBREW_AUTO_UPDATE_SECS=86400
-export LDFLAGS="-L/usr/local/opt/zlib/lib"
-export CPPFLAGS="-I/usr/local/opt/zlib/include"
-export PKG_CONFIG_PATH="/usr/local/opt/zlib/lib/pkgconfig"
-export LDFLAGS="-L/usr/local/opt/bison/lib"
 
 alias ls='exa -abghl'
 alias restart-docker="sudo systemctl stop docker; sudo systemctl start docker"
@@ -431,14 +426,10 @@ zflai-msg "[zshrc] Finishing, loaded custom modules: ${(j:, :@)${(k)modules[@]}:
 source /usr/local/bin/virtualenvwrapper.sh
 # cd $HOME
 
-export PATH="/usr/local/opt/openssl@3/bin:$PATH"
+export PATH="/usr/local/opt/openssl@1.1/bin:$PATH"
+# export PATH="/usr/local/opt/openssl@3/bin:$PATH"
 
-# For compilers to find openssl@3 you may need to set:
-export LDFLAGS="-L/usr/local/opt/openssl@3/lib"
-export CPPFLAGS="-I/usr/local/opt/openssl@3/include"
-
-# For pkg-config to find openssl@3 you may need to set:
-export PKG_CONFIG_PATH="/usr/local/opt/openssl@3/lib/pkgconfig"
+[[ ! -f $HOME/.compiler_exports.sh ]] || source $HOME/.compiler_exports.sh
 
 export NVM_DIR="$HOME/.nvm"
   [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
@@ -449,4 +440,80 @@ alias coursera-dl='docker run --rm -it --env-file ./.env -v "$HOME/projects/pers
 
 source /usr/local/opt/asdf/libexec/asdf.sh
 
-# source /usr/local/opt/asdf/libexec/asdf.bash
+# pyenv added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+pathadd "$HOME/.pyenv/bin"
+eval "$(pyenv virtualenv-init -)"
+
+
+# untar added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias untar="tar xvzf"
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+if command -v pyenv 1>/dev/null 2>&1; then
+  eval "$(pyenv init -)"
+fi
+
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/enelsestuen/projects/google/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/enelsestuen/projects/google/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/enelsestuen/projects/google/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/enelsestuen/projects/google/google-cloud-sdk/completion.zsh.inc'; fi
+
+
+
+# my_sudo added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias my-sudo="sudo -E" # preserve the current environment into the sudo session
+
+# pyenv-virtualenv added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+if which pyenv-virtualenv-init > /dev/null; then eval "$(pyenv virtualenv-init -)"; fi
+
+# restart-coreaudio added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias restart-coreaudio="sudo launchctl kickstart -k system/com.apple.audio.coreaudiod"
+
+# autojump added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+[ -f /usr/local/etc/profile.d/autojump.sh ] && . /usr/local/etc/profile.d/autojump.sh
+
+# aws-shell added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias aws-shell='docker run -it --rm -v $HOME/.aws:/root/.aws pahud/aws-shell'
+fpath=(~/.zsh.d/ $fpath)
+
+# restart-coreaudio added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias restart-coreaudio="sudo launchctl kickstart -k system/com.apple.audio.coreaudiod"
+
+# jenv added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+export PATH="$HOME/.jenv/bin:$PATH" && eval "$(jenv init -)"
+
+# reset-finder added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias reset-finder-="sudo killall Finder; unzip -f $HOME/com.apple.finder.savedState.zip -d $HOME/Library/Saved\ Application\ State/com.apple.finder.savedState; open -a Finder;"
+
+export AWS_PROFILE=biotek
+export AWS_REGION=us-east-2
+export AWS_DEFAULT_REGION=us-east-2
+export ACCOUNT_ID=120501682129
+
+# zappashell added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias zappashell='docker run -ti -p 5000:5000 -e AWS_PROFILE=$AWS_PROFILE -v "$(pwd):/var/task" -v ~/.aws/:/root/.aws --rm lambci/lambda:build-python3.9 bash'
+
+# knative added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias knative='kubectl --kubeconfig=~/projects/biotek/triggermesh/eksknative.yaml'
+
+# delete-orig added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias delete-orig="find . -name '*.orig' -delete"
+
+# LPASS_ASKPASS added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+export LPASS_ASKPASS=~/projects/gist/askpass.sh
+
+# chrome-alias added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias google-chrome="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+# start-redis added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+alias start-redis="redis-server /usr/local/etc/redis.conf"
+
+# cht.sh added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+source ~/.bash.d/cht.sh
+
+# readline-compiler-flags added by /Users/enelsestuen/projects/gist/append_idempotent.sh
+export CFLAGS="-I/usr/local/include -I/usr/local/Cellar/readline/8.1.1/include"
+export LDFLAGS="-L/usr/local/lib -L/usr/local/Cellar/readline/8.1.1/lib"
+# alias dotfile_sed_replace="find $(dotfiles source-path) -type f -name "dot_*" -print0 | xargs -0 sed -i '' -e \`#ex 's/6.3.8/8.1.1/g'\` \\"
